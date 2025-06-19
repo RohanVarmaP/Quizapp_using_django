@@ -99,7 +99,7 @@ def quiz_view(request, quiz_id):
                 json={'answers': answers}
             )
             if response.status_code == 200:
-                return redirect('quiz_marks', quiz_id=quiz_id)
+                return redirect('rank', quiz_id=quiz_id)
             messages.error(request, "Failed to submit quiz.")
         except requests.exceptions.RequestException as e:
             messages.error(request, f"Quiz submission failed: {e}")
