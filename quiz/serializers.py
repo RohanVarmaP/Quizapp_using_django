@@ -94,6 +94,7 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuestionsinQuizTable
+        # fields='__all__'
         fields = ['question']
 #This brings it all together
 class QuizPageSerializer(serializers.Serializer):
@@ -135,14 +136,7 @@ class QuizMarksSummarySerializer(serializers.Serializer):
         marks = MarksTable.objects.filter(quiz=quiz).select_related('user').order_by('-marks')
         return MarksSerializer(marks, many=True).data
 
-#Pulls the questions,answers and user_given_answer linked to a quiz through QuestionsinQuizTable
-class AnsweredQuizQuestionSerializer(serializers.ModelSerializer):
-    question = QuestionSerializer()
-    user_answer=UserAnswerSerializer()
-    class Meta:
-        model = QuestionsinQuizTable
-        fields = ['question','user_answer']
-#This brings it all together
+#Pulls the questions,answers and user_given_answer linked to a quiz
 class AnsweredQuizPageSerializer(serializers.Serializer):
     username = serializers.CharField(source='user.username')
     quiz_name = serializers.CharField(source='quiz.quiz_name')

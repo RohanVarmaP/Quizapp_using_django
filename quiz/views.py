@@ -8,6 +8,8 @@ from rest_framework.views import APIView
 from rest_framework import status
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import update_last_login
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from .models import (RoleTable,UserTable,QuizTable,
                      QuestionTable,QuestionsinQuizTable,
                      UserAnswerTable,MarksTable,AttendedQuizTable)
@@ -44,6 +46,7 @@ class LoginView(APIView):
 
         return Response({'error': "Invalid Credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
+@method_decorator(csrf_exempt, name='dispatch')  # Disable CSRF for this view
 class LogoutView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
