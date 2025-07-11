@@ -1,0 +1,49 @@
+{% extends "app/base.html" %}
+{% block title %}{{ quiz.quiz_name }}{% endblock %}
+
+{% block content %}
+    <div class="max-w-4xl mx-auto py-10 px-6 bg-white shadow-md rounded-lg mt-10">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">{{ quiz.quiz_name }}</h1>
+        <form method="POST" action="">
+            {% csrf_token %}
+            {% for item in quiz.questions %}
+                {% with item.question as q %}
+                <div class="mb-6 border-b pb-4">
+                    <p class="font-medium text-lg text-gray-700 mb-2">{{ forloop.counter }}. {{ q.question }}</p>
+
+                    <div class="ml-4 space-y-2">
+                        <label class="block">
+                            <input type="radio" name="question_{{ q.question_id }}" value="A" class="mr-2">
+                            {{ q.option_a }}
+                        </label>
+                        <label class="block">
+                            <input type="radio" name="question_{{ q.question_id }}" value="B" class="mr-2">
+                            {{ q.option_b }}
+                        </label>
+                        <label class="block">
+                            <input type="radio" name="question_{{ q.question_id }}" value="C" class="mr-2">
+                            {{ q.option_c }}
+                        </label>
+                        <label class="block">
+                            <input type="radio" name="question_{{ q.question_id }}" value="D" class="mr-2">
+                            {{ q.option_d }}
+                        </label>
+                    </div>
+                </div>
+                {% endwith %}
+            {% endfor %}
+            {% if request.session.role == 'student' %}
+                <div class="text-center">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow">
+                        Submit Quiz
+                    </button>
+                </div>
+            {% endif %}
+        </form>
+        <div class="mt-8 text-center">
+            <a href="{% url 'home' %}" class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                ⬅ Back to Home
+            </a>
+        </div>
+    </div>
+{% endblock %}
