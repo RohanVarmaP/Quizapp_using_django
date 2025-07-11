@@ -54,7 +54,6 @@ def home_view(request):
     try:
         response = requests.get(API_BASE_URL + 'home/', headers=headers)
         data = response.json()
-        print(data)
         return render(request, 'app/home.html', {'data': data})
     except requests.exceptions.RequestException as e:
         messages.error(request, f"Could not load home: {e}")
@@ -134,7 +133,7 @@ def review_quiz_view(request, quiz_id):
             response = requests.get(API_BASE_URL + f'quiz/{quiz_id}/view/', headers=headers)
             if response.status_code == 200:
                 quiz_data = response.json()
-                return render(request, 'app/quiz_result.html', {'quiz': quiz_data})
+                return render(request, 'app/quiz_review.html', {'quiz': quiz_data})
             messages.error(request, "Quiz not found.")
             return redirect('home')
         except requests.exceptions.RequestException as e:

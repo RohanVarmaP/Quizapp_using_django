@@ -75,9 +75,10 @@ class MarksTable(models.Model):
 
 class AttendedQuizTable(models.Model):
     aq_id=models.UUIDField(editable=False,primary_key=True,default=uuid.uuid4)
+    first=models.BooleanField(default=False)
+    second=models.BooleanField(default=False)
     user=models.ForeignKey(UserTable,on_delete=models.CASCADE)
     quiz=models.ForeignKey(QuizTable,on_delete=models.CASCADE)
-
     class Meta:
         unique_together=('user','quiz')
 

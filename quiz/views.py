@@ -85,13 +85,20 @@ class SubmitAnswersView(APIView):
 
     def post(self, request, quiz_id):
         user = request.user
-        answers = request.data.get('answers', {})  # Expect: {"question_id": "A", ...}
+        answers = request.data.get('answers', {})  # Expecting: [{"question_id": "xyz", "useranswer": "A"}, ...]
 
         try:
             quiz = QuizTable.objects.get(quiz_id=quiz_id, quiz_published=True)
         except QuizTable.DoesNotExist:
             return Response({'error': 'Quiz not found or not published'}, status=404)
 
+        # Step 1: Check attempt status
+        attempt, created = AttendedQuizTable.objects.get_or_create(user=user, quiz=quiz)
+
+        if attempt.first and attempt.second:
+            return Response({'error': 'Maximum attempts reached'}, status=403)
+
+        # Step 2: Calculate marks
         total_questions = 0
         correct_answers = 0
 
@@ -105,7 +112,7 @@ class SubmitAnswersView(APIView):
                 if correct:
                     correct_answers += 1
 
-                # Save user answer
+                # Save user's answer
                 UserAnswerTable.objects.update_or_create(
                     user=user,
                     quiz=quiz,
@@ -116,17 +123,24 @@ class SubmitAnswersView(APIView):
             except QuestionTable.DoesNotExist:
                 continue
 
-        # Save to MarksTable
         percentage = int((correct_answers / total_questions) * 100) if total_questions > 0 else 0
+
+        # Step 3: Save marks
         MarksTable.objects.update_or_create(user=user, quiz=quiz, defaults={'marks': percentage})
 
-        # Add to AttendedQuizTable
-        AttendedQuizTable.objects.get_or_create(user=user, quiz=quiz)
+        # Step 4: Update attempt record
+        if not attempt.first:
+            attempt.first = True
+        elif not attempt.second:
+            attempt.second = True
+        attempt.save()
 
         return Response({
             'message': 'Answers submitted successfully',
+            'attempt': 'first' if not attempt.second else 'second',
             'score': percentage
         }, status=200)
+
 
 class QuizMarksView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -150,7 +164,8 @@ class AnsweredQuizPageView(APIView):
             quiz = QuizTable.objects.get(quiz_id=quiz_id, quiz_published=True)
         except QuizTable.DoesNotExist:
             return Response({'error': 'Quiz not found or not published'}, status=404)
-
-        data = {'user': request.user, 'quiz': quiz}
+        # print("views Hellooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo") 
+        # print(request.user.role)
+        data = {'user': request.user, 'quiz': quiz,'role':request.user.role}
         serializer = AnsweredQuizPageSerializer(data)
         return Response(serializer.data)

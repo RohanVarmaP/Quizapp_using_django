@@ -83,8 +83,8 @@ class AttendedQuizSerializer(serializers.ModelSerializer):
     
     def validate(self, data):
         # Prevent duplicate attendance records
-        if AttendedQuizTable.objects.filter(user=data['user'], quiz=data['quiz']).exists():
-            raise serializers.ValidationError("User has already attended this quiz.")
+        if AttendedQuizTable.objects.filter(user=data['user'], quiz=data['quiz'], first=True, second=True).exists():
+            raise serializers.ValidationError("User has already completed his Second atempt of this quiz.")
         return data
 
 #serializers for quiz page
@@ -113,18 +113,28 @@ class QuizPageSerializer(serializers.Serializer):
 
 class UserHomePageSerializer(serializers.Serializer):
     username = serializers.CharField()
-    attended_quizzes = serializers.SerializerMethodField()
-    not_attended_quizzes = serializers.SerializerMethodField()
+    single_attempt_completed_quizzes = serializers.SerializerMethodField()
+    fully_attempted_quizzes = serializers.SerializerMethodField()
+    not_attempted_quizzes = serializers.SerializerMethodField()
 
-    def get_attended_quizzes(self, user):
-        attended_quiz_ids = AttendedQuizTable.objects.filter(user=user).values_list('quiz_id', flat=True)
-        quizzes = QuizTable.objects.filter(quiz_id__in=attended_quiz_ids, quiz_published=True)
+    def get_single_attempt_completed_quizzes(self, user):
+        # Quizzes where only first attempt is completed
+        attempts = AttendedQuizTable.objects.filter(user=user, first=True, second=False, quiz__quiz_published=True)
+        quizzes = [a.quiz for a in attempts]
         return QuizSerializer(quizzes, many=True).data
 
-    def get_not_attended_quizzes(self, user):
-        attended_quiz_ids = AttendedQuizTable.objects.filter(user=user).values_list('quiz_id', flat=True)
-        quizzes = QuizTable.objects.filter(quiz_published=True).exclude(quiz_id__in=attended_quiz_ids)
+    def get_fully_attempted_quizzes(self, user):
+        # Quizzes where both attempts are completed
+        attempts = AttendedQuizTable.objects.filter(user=user, first=True, second=True, quiz__quiz_published=True)
+        quizzes = [a.quiz for a in attempts]
         return QuizSerializer(quizzes, many=True).data
+
+    def get_not_attempted_quizzes(self, user):
+        # Quizzes the user has never attempted
+        attempted_quiz_ids = AttendedQuizTable.objects.filter(user=user).values_list('quiz_id', flat=True)
+        quizzes = QuizTable.objects.filter(quiz_published=True).exclude(quiz_id__in=attempted_quiz_ids)
+        return QuizSerializer(quizzes, many=True).data
+
 
 
 #serializer for Ranking page
@@ -145,24 +155,54 @@ class AnsweredQuizPageSerializer(serializers.Serializer):
     def get_questions(self, obj):
         quiz = obj['quiz']
         user = obj['user']
+        role= str(obj['role'])
+        # print("hellooooooooooooooooooooooooooooooooooooooooooooooooooooooooo")
+        # print(role)
+        # Check the user's attempt status
+        # print("kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+        # print(user)
+        # print(quiz)
+        try:
+            attended = AttendedQuizTable.objects.get(user=user, quiz=quiz)
+        except AttendedQuizTable.DoesNotExist:
+            attended = None
+        # print("kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+        # print(attended)
+        show_correct_answer = attended.first and attended.second if attended else False
 
-        # Get the questions in the quiz
+        # Get all questions linked to the quiz
         questions_links = QuestionsinQuizTable.objects.filter(quiz=quiz).select_related('question')
-
+        
         result = []
         for link in questions_links:
             question = link.question
 
             # Fetch the user's answer for this question
             try:
-                user_answer = UserAnswerTable.objects.get(user=user, question=question)
-                user_answer_data = UserAnswerSerializer(user_answer).data
+                user_answer_obj = UserAnswerTable.objects.get(user=user, quiz=quiz, question=question)
+                user_answer_data = UserAnswerSerializer(user_answer_obj).data
+                is_correct = (user_answer_obj.useranswer == question.answer)
             except UserAnswerTable.DoesNotExist:
-                user_answer_data = None  # or {'selected_answer': None}
+                user_answer_data = {'selected_answer': None}
+                is_correct = False
 
+            question_data = {
+                'question_id': question.question_id,
+                'question': question.question,
+                'option_a': question.option_a,
+                'option_b': question.option_b,
+                'option_c': question.option_c,
+                'option_d': question.option_d,
+            }
+            if show_correct_answer == True or role == "admin":
+                question_data['correct_answer'] = question.answer
+            else:
+                question_data['correct_answer'] = None  # Or just omit this key if preferred
+            
             result.append({
-                'question': QuestionSerializer(question).data,
+                'question': question_data,
                 'user_answer': user_answer_data,
+                'is_correct': is_correct
             })
 
         return result
