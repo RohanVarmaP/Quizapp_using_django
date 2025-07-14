@@ -55,6 +55,36 @@ class LogoutView(APIView):
         request.user.auth_token.delete()
         logout(request)
         return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
+    
+class SignupView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+        role_name = request.data.get("role")  # example: "student"
+
+        if not username or not password or not role_name:
+            return Response({"error": "Username, password, and role are required."}, status=400)
+
+        if UserTable.objects.filter(username=username).exists():
+            return Response({"error": "Username already exists."}, status=400)
+
+        try:
+            role = RoleTable.objects.get(role_name__iexact=role_name)
+        except RoleTable.DoesNotExist:
+            return Response({"error": f"Role '{role_name}' not found."}, status=400)
+
+        user = UserTable.objects.create_user(username=username, password=password, role=role)
+
+        return Response({
+            "message": "User registered successfully.",
+            "user_id": user.user_id,
+            "username": user.username,
+            "role": user.role.role_name
+        }, status=201)
+
 
 #web pages for quiz
 class HomePageView(APIView):

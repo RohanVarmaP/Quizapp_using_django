@@ -19,11 +19,12 @@ from .views import (
     LoginView, LogoutView,
     HomePageView, QuizPageView,
     SubmitAnswersView, QuizMarksView,
-    AnsweredQuizPageView,
+    AnsweredQuizPageView,SignupView
 )
 
 urlpatterns = [
     path('login/', LoginView.as_view()),
+    path('signup/', SignupView.as_view()),
     path('logout/', LogoutView.as_view()),
     path('home/', HomePageView.as_view()),
     path('quiz/<uuid:quiz_id>/', QuizPageView.as_view()),  # GET

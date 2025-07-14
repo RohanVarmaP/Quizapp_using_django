@@ -34,6 +34,40 @@ def login_view(request):
 
     return render(request, 'app/login.html')
 
+def signup_view(request):
+    token = request.session.get('token')
+    print(token)
+    if token:
+        return redirect('home')
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        conform_password =request.POST.get('confirm_password')
+        if password != conform_password:
+            messages.error(request, "Passwords do not match")
+            return redirect('signup')
+        try:
+            response = requests.post(API_BASE_URL + 'signup/', data={
+                'username': username,
+                'password': password,
+                'role':'student'
+            })
+            print(response.status_code)
+            print(response.json())
+            print('signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
+            print('signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
+            print('signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
+            print('signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
+            if response.status_code == 201:
+                print('kk  signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
+                return redirect('login')
+            else:
+                messages.error(request, "Invalid Credentials")
+        except requests.exceptions.RequestException as e:
+            messages.error(request, f"Signup failed: {e}")
+            return redirect('signup')
+    return render(request, 'app/signup.html')
+
 def logout_view(request):
     token = request.session.get('token')
     if token:
@@ -91,6 +125,8 @@ def quiz_view(request, quiz_id):
                     'question_id': question_id,
                     'useranswer': value
                 })
+        print("llllllllllllllllllllllllllllllllll")
+        print(answers)
         try:
             response = requests.post(
                 API_BASE_URL + f'quiz/{quiz_id}/submit/',
