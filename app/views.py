@@ -54,12 +54,8 @@ def signup_view(request):
             })
             print(response.status_code)
             print(response.json())
-            print('signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
-            print('signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
-            print('signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
-            print('signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
             if response.status_code == 201:
-                print('kk  signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
+                # print('kk  signup successful Wowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.')
                 return redirect('login')
             else:
                 messages.error(request, "Invalid Credentials")
