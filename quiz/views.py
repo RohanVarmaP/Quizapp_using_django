@@ -19,7 +19,11 @@ from .serializers import (RoleSerializer,UserSerializer,
                           MarksSerializer,AttendedQuizSerializer, 
                           UserHomePageSerializer,QuizPageSerializer, QuizMarksSummarySerializer,
                           AnsweredQuizPageSerializer)
+from rest_framework.authentication import SessionAuthentication
 
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    def enforce_csrf(self, request):
+        return  # disables CSRF check
 
 
 # Create your views here.
@@ -46,7 +50,7 @@ class LoginView(APIView):
 
         return Response({'error': "Invalid Credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
-@method_decorator(csrf_exempt, name='dispatch')  # Disable CSRF for this view
+
 class LogoutView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -55,7 +59,8 @@ class LogoutView(APIView):
         request.user.auth_token.delete()
         logout(request)
         return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
-    
+
+
 class SignupView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -63,7 +68,9 @@ class SignupView(APIView):
     def post(self, request):
         username = request.data.get("username")
         password = request.data.get("password")
-        role_name = request.data.get("role")  # example: "student"
+        role_name = "role"  # example: "student"
+
+        print(username,password,role_name)
 
         if not username or not password or not role_name:
             return Response({"error": "Username, password, and role are required."}, status=400)
